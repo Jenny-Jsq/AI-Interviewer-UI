@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockMaster AI | 匹配您的面试官</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3B507D;
+            --secondary: #F5F0EA;
+            --accent: #112250;
+            --warm: #F7E5DA;
+        }
+        body { background-color: var(--secondary); color: var(--accent); font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", serif; }
+        .bg-primary { background-color: var(--primary); }
+        .bg-secondary { background-color: var(--secondary); }
+        .bg-accent { background-color: var(--accent); }
+        .bg-warm { background-color: var(--warm); }
+        .text-primary { color: var(--primary); }
+        .border-primary { border-color: var(--primary); }
+        
+        .step-hidden { display: none; }
+        .todo-item.completed { text-decoration: line-through; opacity: 0.5; color: #94a3b8; }
+        .todo-check.completed { background-color: #3B507D; border-color: #3B507D; }
+        
+        @keyframes radar {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .radar-ping { animation: radar 2s infinite; }
+    </style>
+</head>
+<body>
+
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="location.reload()">
+                <div class="bg-primary p-2 rounded text-white">
+                    <i class="fas fa-landmark"></i>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-accent italic">MockMaster AI</span>
+            </div>
+            <div id="timer-display" class="hidden font-mono bg-warm px-4 py-1 rounded-full text-primary font-bold border border-primary/20">
+                00:00
+            </div>
+        </div>
+    </header>
+
+    <section id="step-1" class="container mx-auto px-4 py-12 max-w-3xl">
+        <div class="bg-white rounded-xl shadow-2xl p-8 md:p-12 border-t-8 border-primary">
+            <h2 class="text-3xl font-bold mb-2">上传信息</h2>
+            <p class="text-stone-500 mb-8">请提供您的申请背景，以便匹配面试官</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-stone-400">目标学校</label>
+                    <select class="w-full bg-secondary border border-stone-200 rounded px-4 py-3 outline-none focus:border-primary transition cursor-pointer">
+                        <option>Harvard Business School</option>
+                        <option>Stanford GSB</option>
+                        <option>Wharton School</option>
+                        <option>INSEAD / LBS</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-stone-400">申请项目</label>
+                    <input type="text" placeholder="例如：Full-time MBA" class="w-full bg-secondary border border-stone-200 rounded px-4 py-3 outline-none focus:border-primary transition">
+                </div>
+            </div>
+
+            <div class="space-y-6 mb-10">
+                <div class="border-2 border-dashed border-primary/30 rounded-lg p-10 text-center bg-secondary/30 hover:bg-warm/20 transition cursor-pointer">
+                    <i class="fas fa-file-alt text-2xl text-primary mb-2"></i>
+                    <p class="text-sm font-bold">点击或拖拽上传简历（CV）</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold uppercase tracking-widest text-stone-400">额外信息（如动机信，简答题等）</label>
+                    <textarea rows="5" class="w-full bg-secondary border border-stone-200 rounded px-4 py-3 outline-none focus:border-primary transition" placeholder="粘贴您的 Essay 或动机信内容..."></textarea>
+                </div>
+            </div>
+
+            <button onclick="startLoading()" class="w-full bg-primary hover:bg-accent text-white font-bold py-5 rounded-lg transition-all shadow-lg text-lg uppercase tracking-widest">
+                匹配面试官
+            </button>
+        </div>
+    </section>
+
+    <section id="step-2" class="step-hidden container mx-auto px-4 py-32 text-center">
+        <div class="relative inline-block mb-12">
+            <div class="absolute inset-0 bg-primary/20 rounded-full radar-ping"></div>
+            <div class="relative bg-white w-24 h-24 rounded-full shadow-2xl flex items-center justify-center border border-primary/10">
+                <i class="fas fa-user-secret text-4xl text-primary"></i>
+            </div>
+        </div>
+
+        <h2 class="text-3xl font-bold text-accent mb-4">正在呼叫面试官</h2>
+        <p class="text-lg text-stone-500">预计还需要 <span id="countdown" class="text-primary font-black text-2xl">10</span> 秒</p>
+        
+        <div class="w-48 h-1.5 bg-stone-200 mx-auto mt-10 rounded-full overflow-hidden">
+            <div id="loader-bar" class="h-full bg-primary transition-all duration-1000" style="width: 0%"></div>
+        </div>
+        <p class="mt-8 text-stone-400 text-sm italic font-serif">正在基于 LinkedIn 公开信息构建数字孪生 Agent...</p>
+    </section>
+
+    <section id="step-3" class="step-hidden container mx-auto px-4 py-8 max-w-6xl">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[750px]">
+            <div class="lg:col-span-3 bg-white rounded-xl p-6 shadow-sm border border-stone-200">
+                <div class="flex items-center space-x-3 mb-8 pb-4 border-b border-stone-100">
+                    <img src="https://i.pravatar.cc/150?img=68" class="w-12 h-12 rounded-lg">
+                    <div>
+                        <p class="font-bold text-accent leading-none">Sarah Jenkins</p>
+                        <p class="text-[10px] text-stone-400 mt-1 uppercase">Admissions Director</p>
+                    </div>
+                </div>
+                
+                <h3 class="font-bold text-xs uppercase tracking-widest text-stone-400 mb-6 flex items-center">
+                    <i class="fas fa-list-ul mr-2"></i> 进度追踪
+                </h3>
+                <div id="todo-list" class="space-y-5 text-sm font-medium">
+                    <div class="flex items-center space-x-3 todo-item" id="todo-0">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>自我介绍与破冰</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-1">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>职业目标 (Why MBA)</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-2">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>领导力案例深挖</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-3">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>失败/挑战经历分析</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-4">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>行业洞察与观点</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-5">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>团队协作与多样性</span>
+                    </div>
+                    <div class="flex items-center space-x-3 todo-item" id="todo-6">
+                        <div class="w-5 h-5 border-2 border-stone-300 rounded todo-check flex items-center justify-center text-white text-[10px] transition-colors"><i class="fas fa-check"></i></div>
+                        <span>反向提问环节</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-9 flex flex-col bg-white rounded-xl shadow-2xl overflow-hidden border border-stone-200">
+                <div id="chat-window" class="flex-1 overflow-y-auto p-10 space-y-8 bg-secondary/20">
+                    <div class="flex items-start">
+                        <div class="bg-warm p-6 rounded-2xl rounded-tl-none border-l-4 border-primary shadow-sm max-w-[85%]">
+                            <p class="text-accent leading-relaxed text-lg italic">
+                                “您好。我是 Sarah。我已经仔细审阅了您的简历和申请短文。我们开始吧。”
+                                <br><br>
+                                <b>首先，请做一个简短的自我介绍，并重点谈谈为什么选择在现在这个节点申请 MBA？</b>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 bg-white border-t border-stone-100 flex items-center space-x-4">
+                    <input type="text" id="user-input" placeholder="键入您的回答并点击发送..." class="flex-1 bg-secondary border-none rounded-xl px-6 py-5 outline-none focus:ring-2 focus:ring-primary/20 transition">
+                    <button onclick="handleSendMessage()" class="bg-primary text-white px-10 py-5 rounded-xl font-bold hover:bg-accent transition shadow-lg text-sm uppercase tracking-widest">发送</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="step-4" class="step-hidden container mx-auto px-4 py-12 max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-2xl p-10 border-t-8 border-primary">
+            <div class="flex justify-between items-end mb-10">
+                <div>
+                    <h2 class="text-4xl font-bold text-accent mb-2">面试评估报告</h2>
+                    <p class="text-stone-400">基于商学院面试官评价体系</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">综合匹配度</p>
+                    <p class="text-5xl font-black text-primary">88%</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div class="bg-secondary/30 p-6 rounded-xl border border-stone-100">
+                    <h3 class="font-bold text-lg mb-4 text-primary flex items-center">
+                        <i class="fas fa-bullseye mr-2"></i> 面试官期待特质
+                    </h3>
+                    <ul class="space-y-3 text-stone-600 text-sm">
+                        <li class="flex items-start"><i class="fas fa-check text-green-600 mt-1 mr-2 text-xs"></i> 极强的商业直觉与多维思考能力</li>
+                        <li class="flex items-start"><i class="fas fa-check text-green-600 mt-1 mr-2 text-xs"></i> 跨文化的共情能力与包容性领导力</li>
+                        <li class="flex items-start"><i class="fas fa-check text-green-600 mt-1 mr-2 text-xs"></i> 明确的职业目标与项目贡献度</li>
+                    </ul>
+                </div>
+                <div class="bg-warm/30 p-6 rounded-xl border border-warm/20">
+                    <h3 class="font-bold text-lg mb-4 text-primary flex items-center">
+                        <i class="fas fa-user-check mr-2"></i> 您的呈现特质
+                    </h3>
+                    <ul class="space-y-3 text-stone-600 text-sm">
+                        <li class="flex items-start"><i class="fas fa-star text-yellow-500 mt-1 mr-2 text-xs"></i> 卓越的数据驱动思维与落地能力</li>
+                        <li class="flex items-start"><i class="fas fa-star text-yellow-500 mt-1 mr-2 text-xs"></i> 逻辑严密的职业转型陈述</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-secondary p-8 rounded-xl mb-10 border-l-4 border-primary">
+                <h3 class="font-bold mb-4 text-accent uppercase tracking-widest text-sm text-center md:text-left">改进建议 (Actionable Advice)</h3>
+                <div class="text-stone-600 space-y-4 leading-relaxed font-serif text-lg">
+                    <p>在回答<b>“挑战经历”</b>时，您的描述更倾向于结果导向。建议在真实面试中增加对<b>内心决策冲突</b>的描写，展现您的自我迭代过程。此外，可以结合学校的特定实验室或社团资源，让 Why School 的部分更有温度。</p>
+                </div>
+            </div>
+
+            <div class="flex space-x-4">
+                <button onclick="location.reload()" class="bg-stone-200 text-stone-600 font-bold py-4 px-8 rounded-lg hover:bg-stone-300 transition uppercase tracking-widest text-xs">重新匹配面试官</button>
+                <button class="bg-primary text-white font-bold py-4 px-8 rounded-lg hover:bg-accent transition shadow-lg flex-1">导出详细反馈 PDF</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let currentTodo = 0;
+        let timerInterval;
+        let seconds = 0;
+
+        function startLoading() {
+            document.getElementById('step-1').classList.add('step-hidden');
+            document.getElementById('step-2').classList.remove('step-hidden');
+            
+            let timeLeft = 10;
+            const timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('countdown').innerText = timeLeft;
+                document.getElementById('loader-bar').style.width = ((10 - timeLeft) / 10 * 100) + '%';
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    initChat();
+                }
+            }, 1000);
+        }
+
+        function initChat() {
+            document.getElementById('step-2').classList.add('step-hidden');
+            document.getElementById('step-3').classList.remove('step-hidden');
+            document.getElementById('timer-display').classList.remove('hidden');
+            startTimer();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                seconds++;
+                let mins = Math.floor(seconds / 60);
+                let secs = seconds % 60;
+                document.getElementById('timer-display').innerText = 
+                    (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+            }, 1000);
+        }
+
+        function handleSendMessage() {
+            const input = document.getElementById('user-input');
+            const chatWindow = document.getElementById('chat-window');
+            if (input.value.trim() === "") return;
+
+            chatWindow.innerHTML += `
+                <div class="flex justify-end animate-fadeIn">
+                    <div class="bg-primary text-white p-6 rounded-2xl rounded-tr-none shadow-md max-w-[80%]">
+                        ${input.value}
+                    </div>
+                </div>
+            `;
+            
+            if(currentTodo < 7) {
+                document.querySelector(`#todo-${currentTodo} .todo-check`).classList.add('completed');
+                document.querySelector(`#todo-${currentTodo}`).classList.add('completed');
+                currentTodo++;
+            }
+
+            input.value = "";
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            if (currentTodo === 7) {
+                setTimeout(() => {
+                    clearInterval(timerInterval);
+                    document.getElementById('step-3').classList.add('step-hidden');
+                    document.getElementById('timer-display').classList.add('hidden');
+                    document.getElementById('step-4').classList.remove('step-hidden');
+                }, 1500);
+            } else {
+                setTimeout(() => {
+                    chatWindow.innerHTML += `
+                        <div class="flex items-start animate-fadeIn">
+                            <div class="bg-warm p-6 rounded-2xl rounded-tl-none border-l-4 border-primary shadow-sm max-w-[85%]">
+                                <p class="text-accent leading-relaxed italic">
+                                    好的。让我们针对下一部分 <b>"${document.querySelector('#todo-' + currentTodo + ' span').innerText}"</b> 深入聊聊...
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>
