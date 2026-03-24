@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockMaster AI | 申请冲刺</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .step-hidden { display: none; }
+        .sky-gradient { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+        .pulse-animation { animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800">
+
+    <header class="bg-white border-b border-sky-100 sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="location.reload()">
+                <div class="bg-sky-500 p-2 rounded-lg text-white">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <span class="text-xl font-bold text-sky-600">MockMaster AI</span>
+            </div>
+            <div id="status-badge" class="hidden px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold">
+                ● 模拟进行中
+            </div>
+        </div>
+    </header>
+
+    <section id="step-1" class="container mx-auto px-4 py-12 max-w-3xl">
+        <div class="bg-white rounded-3xl shadow-xl shadow-sky-100/50 p-8 md:p-12 border border-sky-50">
+            <h2 class="text-3xl font-extrabold text-slate-800 mb-2">定制你的面试官</h2>
+            <p class="text-slate-500 mb-10">上传资料，我们将根据 LinkedIn 公开信息训练专属 Agent。</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-600">目标商学院</label>
+                    <select id="school" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-400 outline-none transition">
+                        <option>Harvard Business School</option>
+                        <option>Stanford GSB</option>
+                        <option>Wharton School</option>
+                        <option>INSEAD</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-600">目标项目</label>
+                    <input type="text" id="program" placeholder="如: Full-time MBA" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-400 outline-none transition">
+                </div>
+            </div>
+
+            <div class="space-y-6 mb-10">
+                <div class="relative border-2 border-dashed border-sky-200 rounded-2xl p-8 text-center hover:bg-sky-50 transition cursor-pointer">
+                    <input type="file" class="absolute inset-0 opacity-0 cursor-pointer">
+                    <i class="fas fa-file-upload text-3xl text-sky-400 mb-3"></i>
+                    <p class="font-bold text-slate-700">点击或拖拽上传简历 (CV)</p>
+                    <p class="text-xs text-slate-400 mt-1">支持 PDF, Word 格式</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-slate-600">动机信 (Cover Letter / Essay)</label>
+                    <textarea rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-sky-400 outline-none transition" placeholder="粘贴你的 Essay 内容，Agent 将针对性提问..."></textarea>
+                </div>
+            </div>
+
+            <button onclick="startLoading()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-sky-200 transition-all transform hover:-translate-y-1">
+                生成面试官并开始练习
+            </button>
+        </div>
+    </section>
+
+    <section id="step-2" class="step-hidden container mx-auto px-4 py-24 text-center">
+        <div class="relative inline-block mb-12">
+            <div class="absolute inset-0 bg-sky-400 rounded-full pulse-animation"></div>
+            <div class="relative bg-white p-8 rounded-full shadow-2xl">
+                <i class="fas fa-robot text-6xl text-sky-500"></i>
+            </div>
+        </div>
+        <h2 class="text-3xl font-bold text-slate-800 mb-4">正在呼叫面试官...</h2>
+        <p class="text-lg text-slate-500 mb-8 max-w-md mx-auto">
+            AI 正在深度检索 LinkedIn 公开资料并分析你的简历，预计还需要 <span id="countdown" class="text-sky-600 font-black text-2xl">10</span> 秒。
+        </p>
+        <div class="w-64 bg-slate-200 h-2 rounded-full mx-auto overflow-hidden">
+            <div id="progress-bar" class="bg-sky-500 h-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+        <p class="mt-6 text-sm text-slate-400 italic">“正在构建关于领导力和行业转型的问题集...”</p>
+    </section>
+
+    <section id="step-3" class="step-hidden container mx-auto px-4 py-8 max-w-5xl">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[750px]">
+            <div class="lg:col-span-1 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hidden lg:block">
+                <div class="text-center mb-6">
+                    <img src="https://i.pravatar.cc/100?img=68" class="w-24 h-24 rounded-3xl mx-auto mb-4 border-4 border-sky-100">
+                    <h3 class="font-bold text-lg text-slate-800 leading-tight">Sarah Jenkins</h3>
+                    <p class="text-xs text-sky-500 font-bold uppercase tracking-wider">Admissions Director</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-sky-50 p-3 rounded-xl">
+                        <p class="text-[10px] text-sky-600 font-black uppercase mb-1">关注偏好</p>
+                        <p class="text-sm text-slate-600">● 跨文化领导力</p>
+                        <p class="text-sm text-slate-600">● 职业逻辑一致性</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl">
+                        <p class="text-[10px] text-slate-400 font-black uppercase mb-1">训练源数据</p>
+                        <p class="text-xs text-slate-500 italic">LinkedIn, HBS Blog, 2025 Webinar</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
+                <div id="chat-box" class="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+                    <div class="flex items-start">
+                        <div class="bg-white border-l-4 border-sky-500 p-5 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
+                            <p class="text-slate-700 leading-relaxed">
+                                你好！我是 Sarah。根据你的申请材料，我看到你在数字化转型方面有非常独特的见解。在正式开始前，我很好奇：<br><br>
+                                <b>在你简历中提到的那个项目里，你面临最大的阻力来自哪里？你是如何说服那些资深利益相关者的？</b>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-white border-t border-slate-100">
+                    <div class="flex items-center space-x-4">
+                        <input type="text" placeholder="输入你的回答..." class="flex-1 bg-slate-100 border-none rounded-2xl px-6 py-4 outline-none focus:ring-2 focus:ring-sky-300 transition">
+                        <button class="bg-sky-500 text-white w-14 h-14 rounded-2xl hover:bg-sky-600 shadow-lg shadow-sky-200 transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        function startLoading() {
+            // 切换到加载页
+            document.getElementById('step-1').classList.add('step-hidden');
+            document.getElementById('step-2').classList.remove('step-hidden');
+            
+            let timeLeft = 10; // 这里可以设置实际的预估时间
+            const countdownEl = document.getElementById('countdown');
+            const progressEl = document.getElementById('progress-bar');
+            
+            const timer = setInterval(() => {
+                timeLeft--;
+                countdownEl.innerText = timeLeft;
+                
+                // 更新进度条
+                let progress = ((10 - timeLeft) / 10) * 100;
+                progressEl.style.width = progress + '%';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    showChat();
+                }
+            }, 1000);
+        }
+
+        function showChat() {
+            document.getElementById('step-2').classList.add('step-hidden');
+            document.getElementById('step-3').classList.remove('step-hidden');
+            document.getElementById('status-badge').classList.remove('hidden');
+        }
+    </script>
+
+</body>
+</html>
