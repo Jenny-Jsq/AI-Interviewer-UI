@@ -87,8 +87,31 @@ function InterviewContent() {
     });
     if (response?.sessionId) {
       setSessionId(response.sessionId);
-    }
-  };
+      setInterviewer(response.interviewer);
+      setTopics(response.topics);
+      setCurrentTopicIndex(response.currentTopicIndex);
+      setMessages([
+        {
+          id: "assistant-1",
+          role: "assistant",
+          content: response.openingQuestion,
+          timestamp: Date.now(),
+        },
+      ]);
+
+      setTimeout(() => {
+        setStage("chat");
+      }, 1200);
+    };
+
+    setup();
+  }, [canStart, schoolId, programId, resumeFileName, coverLetterText]);
+
+  useEffect(() => {
+    if (stage !== "chat") return;
+    const timer = window.setInterval(() => setSeconds((prev) => prev + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [stage]);
 
   const handleSendMessage = async (content: string) => {
     setIsSending(true);
@@ -104,7 +127,7 @@ function InterviewContent() {
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
 
-    const webhookResponse = await sendInterviewMessage({
+    const turnResponse = await sendInterviewMessage({
       sessionId,
       messages: nextMessages,
       schoolId,
