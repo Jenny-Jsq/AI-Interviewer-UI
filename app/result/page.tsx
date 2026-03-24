@@ -1,35 +1,42 @@
 "use client";
 
-import { CSSProperties, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import TakeawayCard from "../../components/TakeawayCard";
 import { requestInterviewFeedback } from "../../lib/api";
 import { ChatMessage, InterviewFeedback } from "../../types";
 
-// Fallback feedback used when the feedback API returns nothing. This
-// provides candidates with some generic yet actionable guidance.
 const fallbackFeedback: InterviewFeedback = {
-  summary: "Good structure overall. Your examples were clear, but impact quantification can be stronger.",
+  summary: "整体表达逻辑清晰，职业叙事完整，但在高压追问下仍有量化细节不足的问题。",
   takeaways: [
     {
-      title: "Sharpen your motivation",
-      detail: "You explained your goals, but the link between goal and target curriculum can be tighter.",
-      action: "Use a 30-second why-now + why-this-program statement.",
+      title: "Why MBA 更聚焦",
+      detail: "你的长期目标清晰，但短期路径与项目资源映射可以再具体。",
+      action: "准备一条 30 秒版本：Why now + Why this school。",
     },
     {
-      title: "Increase measurable impact",
-      detail: "Leadership stories are promising but lacked metrics.",
-      action: "Add 1-2 quantified outcomes for each STAR example.",
+      title: "增强成果量化",
+      detail: "领导力案例具备说服力，但数字结果出现频次偏少。",
+      action: "每个 STAR 案例至少补充 1-2 个可验证指标。",
     },
     {
-      title: "Handle follow-up pressure",
-      detail: "Some responses became broad under probing questions.",
-      action: "End each answer with one concrete decision and result.",
+      title: "挑战案例更具反思",
+      detail: "你强调了结果，但决策冲突和复盘过程还可以更深入。",
+      action: "加入“当时如何权衡”“复盘后如何调整”的表述。",
     },
   ],
 };
 
 export default function ResultPage() {
+  return (
+    <Suspense fallback={<main className="app-shell"><section className="panel"><p className="panel-intro">正在加载反馈报告...</p></section></main>}>
+      <ResultContent />
+    </Suspense>
+  );
+}
+
+function ResultContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("sessionId") ?? "";
   const rawMessages = searchParams.get("messages") ?? "[]";
@@ -47,7 +54,6 @@ export default function ResultPage() {
   const [feedback, setFeedback] = useState<InterviewFeedback>(fallbackFeedback);
   const [copied, setCopied] = useState(false);
 
-  // Call the feedback API using the full transcript, session ID and context.
   const handleGenerateFeedback = async () => {
     const webhookFeedback = await requestInterviewFeedback({
       sessionId,
@@ -60,38 +66,45 @@ export default function ResultPage() {
     }
   };
 
-  // Copy the feedback summary and takeaways to the clipboard. Each takeaway
-  // entry is formatted nicely for easy pasting into notes.
   const handleCopy = async () => {
     const text = [
       `Summary: ${feedback.summary}`,
       ...feedback.takeaways.map(
-        (item, index) =>
-          `${index + 1}. ${item.title}\nDetail: ${item.detail}\nNext action: ${item.action}`,
+        (item, index) => `${index + 1}. ${item.title}\nDetail: ${item.detail}\nNext action: ${item.action}`,
       ),
     ].join("\n\n");
 
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setTimeout(() => setCopied(false), 1800);
   };
 
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.h1}>Interview Feedback</h1>
-        <p style={styles.subtitle}>{feedback.summary}</p>
-
-        <div style={styles.buttonRow}>
-          <button style={styles.secondaryButton} type="button" onClick={handleGenerateFeedback}>
-            Refresh from API
-          </button>
-          <button style={styles.primaryButton} type="button" onClick={handleCopy}>
-            {copied ? "Copied!" : "Copy feedback"}
-          </button>
+    <main className="app-shell">
+      <section className="panel result-panel">
+        <div className="result-head">
+          <div>
+            <h2>面试评估报告</h2>
+            <p>基于商学院面试官评价体系生成</p>
+          </div>
+          <div className="score-pill">88%</div>
         </div>
 
-        <section style={styles.grid}>
+        <p className="result-summary">{feedback.summary}</p>
+
+        <div className="result-actions">
+          <button className="secondary-btn" type="button" onClick={handleGenerateFeedback}>
+            刷新 API 反馈
+          </button>
+          <button className="primary-btn" type="button" onClick={handleCopy}>
+            {copied ? "已复制" : "复制反馈"}
+          </button>
+          <Link className="secondary-btn" href="/">
+            重新匹配面试官
+          </Link>
+        </div>
+
+        <section className="takeaway-grid">
           {feedback.takeaways.map((takeaway) => (
             <TakeawayCard
               key={takeaway.title}
@@ -101,55 +114,7 @@ export default function ResultPage() {
             />
           ))}
         </section>
-      </div>
+      </section>
     </main>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f4f6",
-    padding: "32px 16px",
-  },
-  container: {
-    maxWidth: 860,
-    margin: "0 auto",
-    display: "grid",
-    gap: 16,
-  },
-  h1: {
-    margin: 0,
-    fontSize: 30,
-  },
-  subtitle: {
-    margin: 0,
-    color: "#374151",
-  },
-  buttonRow: {
-    display: "flex",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  primaryButton: {
-    padding: "10px 14px",
-    border: "none",
-    borderRadius: 8,
-    background: "#111827",
-    color: "#fff",
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    padding: "10px 14px",
-    border: "1px solid #d1d5db",
-    borderRadius: 8,
-    background: "#fff",
-    color: "#111827",
-    cursor: "pointer",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 12,
-  },
-};

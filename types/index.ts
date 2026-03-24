@@ -24,11 +24,32 @@ export interface InterviewSessionInput {
   coverLetterText?: string;
 }
 
+export interface InterviewerProfile {
+  name: string;
+  title: string;
+  background: string;
+}
+
+export interface StartInterviewResponse {
+  sessionId: string;
+  interviewer: InterviewerProfile;
+  topics: string[];
+  currentTopicIndex: number;
+  openingQuestion: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: number;
+}
+
+export interface TurnResponse {
+  reply: string;
+  currentTopicIndex: number;
+  completedTopicIndexes: number[];
+  interviewComplete: boolean;
 }
 
 export interface InterviewFeedback {
