@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, ChangeEvent } from "react";
+import { ChangeEvent } from "react";
 
 interface ResumeUploadProps {
   resumeFileName: string;
@@ -21,21 +21,21 @@ export default function ResumeUpload({
   };
 
   return (
-    <section style={styles.card}>
-      <h2 style={styles.title}>2) Upload resume + optional cover letter</h2>
-
-      <label style={styles.label}>
-        Resume (PDF/DOC)
-        <input type="file" accept=".pdf,.doc,.docx" style={styles.input} onChange={handleFileChange} />
+    <section className="upload-grid">
+      <label className="upload-dropzone">
+        <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+        <span className="upload-title">点击或拖拽上传简历（CV）</span>
+        <span className="upload-subtitle">支持 PDF / DOC / DOCX</span>
       </label>
-      {resumeFileName ? <p style={styles.hint}>Selected: {resumeFileName}</p> : null}
 
-      <label style={styles.label}>
-        Cover letter text (optional)
+      {resumeFileName ? <p className="upload-file">已选择：{resumeFileName}</p> : null}
+
+      <label className="field-group">
+        <span className="field-label">额外信息（动机信 / Essay / 简答题）</span>
         <textarea
-          style={styles.textarea}
+          className="field-textarea"
           rows={6}
-          placeholder="Paste your cover letter text..."
+          placeholder="粘贴您的 Essay 或动机信内容..."
           value={coverLetterText}
           onChange={(event) => onCoverLetterChange(event.target.value)}
         />
@@ -43,38 +43,3 @@ export default function ResumeUpload({
     </section>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  card: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    padding: 20,
-    display: "grid",
-    gap: 14,
-  },
-  title: {
-    margin: 0,
-    fontSize: 20,
-  },
-  label: {
-    display: "grid",
-    gap: 8,
-    fontWeight: 600,
-  },
-  input: {
-    padding: 8,
-  },
-  textarea: {
-    padding: 12,
-    border: "1px solid #d1d5db",
-    borderRadius: 8,
-    resize: "vertical",
-    fontSize: 14,
-  },
-  hint: {
-    margin: 0,
-    color: "#4b5563",
-    fontSize: 14,
-  },
-};

@@ -1,53 +1,97 @@
 "use client";
 
-import { CSSProperties, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ChatWindow from "../../components/ChatWindow";
-import ResumeUpload from "../../components/ResumeUpload";
 import { sendInterviewMessage, startInterviewSession } from "../../lib/api";
 import { ChatMessage } from "../../types";
 
-// Initial assistant greeting used at the start of a session. The interviewer
-// greets the candidate and invites them to introduce themselves.
+const agendaItems = [
+  "自我介绍与破冰",
+  "职业目标 (Why MBA)",
+  "领导力案例深挖",
+  "失败/挑战经历分析",
+  "行业洞察与观点",
+  "团队协作与多样性",
+  "反向提问环节",
+];
+
 const seedMessage: ChatMessage = {
   id: "assistant-1",
   role: "assistant",
   content:
-    "Hello! Let's begin your mock interview. Tell me about yourself and why now is the right time for this program.",
+    "您好。我是 Sarah。我已经仔细审阅了您的申请背景。首先请做一个简短的自我介绍，并重点谈谈为什么选择在现在申请 MBA？",
   timestamp: Date.now(),
 };
 
+type InterviewStage = "loading" | "chat";
+
 export default function InterviewPage() {
+  return (
+    <Suspense fallback={<main className="app-shell"><section className="panel"><p className="panel-intro">正在加载面试界面...</p></section></main>}>
+      <InterviewContent />
+    </Suspense>
+  );
+}
+
+function InterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Pull the school and program IDs from the query string. These values are
-  // required to start an interview session.
   const schoolId = searchParams.get("schoolId") ?? "";
   const programId = searchParams.get("programId") ?? "";
+  const resumeFileName = searchParams.get("resumeFileName") ?? "";
+  const coverLetterText = searchParams.get("coverLetterText") ?? "";
 
-  const [resumeFileName, setResumeFileName] = useState("");
-  const [coverLetterText, setCoverLetterText] = useState("");
+  const [stage, setStage] = useState<InterviewStage>("loading");
+  const [loadingCountdown, setLoadingCountdown] = useState(8);
+  const [seconds, setSeconds] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([seedMessage]);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+  const [isSending, setIsSending] = useState(false);
 
   const canStart = useMemo(() => Boolean(schoolId) && Boolean(programId), [schoolId, programId]);
 
-  // Lazily start the interview session when the candidate sends their first
-  // message. The sessionId returned from the server is saved so that
-  // subsequent turns include it.
+  useEffect(() => {
+    if (!canStart) return;
+
+    const timer = window.setInterval(() => {
+      setLoadingCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          setStage("chat");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [canStart]);
+
+  useEffect(() => {
+    if (stage !== "chat") return;
+    const timer = window.setInterval(() => setSeconds((prev) => prev + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [stage]);
+
+  const completedCount = Math.min(agendaItems.length, Math.max(0, messages.length - 1));
+
   const handleStartIfNeeded = async () => {
     if (sessionId || !canStart) return;
-    const response = await startInterviewSession({ schoolId, programId, resumeText: undefined, coverLetterText });
+    const response = await startInterviewSession({
+      schoolId,
+      programId,
+      resumeText: resumeFileName ? `Uploaded file: ${resumeFileName}` : undefined,
+      coverLetterText,
+    });
     if (response?.sessionId) {
       setSessionId(response.sessionId);
     }
   };
 
-  // Handle sending a user message. The entire conversation history along with
-  // school and program identifiers is sent to the backend. The server
-  // responds with the next interviewer question.
   const handleSendMessage = async (content: string) => {
+    setIsSending(true);
     await handleStartIfNeeded();
 
     const userMessage: ChatMessage = {
@@ -72,17 +116,14 @@ export default function InterviewPage() {
       role: "assistant",
       content:
         webhookResponse?.reply ??
-        "Thanks for sharing. Can you give one concrete example where you showed leadership under pressure?",
+        "谢谢你的分享。接下来请举一个你在高压环境下体现领导力的具体案例。",
       timestamp: Date.now(),
     };
 
     setMessages((prev) => [...prev, assistantMessage]);
+    setIsSending(false);
   };
 
-  // When the user finishes the mock interview they are redirected to the
-  // results page. The conversation history, session ID and school/program
-  // identifiers are encoded into the query string so the feedback API
-  // endpoint has all the context it needs.
   const handleFinish = () => {
     const payload = encodeURIComponent(JSON.stringify(messages));
     router.push(
@@ -90,58 +131,66 @@ export default function InterviewPage() {
     );
   };
 
+  if (!canStart) {
+    return (
+      <main className="app-shell">
+        <section className="panel">
+          <h2>缺少必要参数</h2>
+          <p className="panel-intro">请返回首页重新选择目标学校与项目。</p>
+          <button className="secondary-btn" onClick={() => router.push("/")}>返回首页</button>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.h1}>Interview Session</h1>
-        <p style={styles.subtitle}>
-          Target: <strong>{schoolId || "N/A"}</strong> · Program: <strong>{programId || "N/A"}</strong>
-        </p>
+    <main className="app-shell interview-shell">
+      <header className="topbar">
+        <div className="brand-mark">🎙️</div>
+        <div>
+          <h1>MockMaster AI</h1>
+          <p>{schoolId} · {programId}</p>
+        </div>
+        {stage === "chat" ? <div className="timer-pill">{formatTime(seconds)}</div> : null}
+      </header>
 
-        <ResumeUpload
-          resumeFileName={resumeFileName}
-          coverLetterText={coverLetterText}
-          onResumeFileChange={setResumeFileName}
-          onCoverLetterChange={setCoverLetterText}
-        />
+      {stage === "loading" ? (
+        <section className="panel panel-loading">
+          <div className="loader-avatar">🕵️</div>
+          <h2>正在呼叫面试官</h2>
+          <p>预计还需要 <strong>{loadingCountdown}</strong> 秒</p>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${((8 - loadingCountdown) / 8) * 100}%` }} />
+          </div>
+        </section>
+      ) : (
+        <section className="interview-grid">
+          <aside className="panel agenda-panel">
+            <h3>进度追踪</h3>
+            <ul>
+              {agendaItems.map((item, index) => (
+                <li key={item} className={index < completedCount ? "done" : ""}>
+                  <span className="agenda-check">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+            <button className="secondary-btn" onClick={handleFinish}>结束面试并查看反馈</button>
+          </aside>
 
-        <ChatWindow messages={messages} onSendMessage={handleSendMessage} />
-
-        <button style={styles.button} type="button" onClick={handleFinish}>
-          Finish and View Feedback
-        </button>
-      </div>
+          <div className="panel chat-panel">
+            <ChatWindow messages={messages} onSendMessage={handleSendMessage} isSending={isSending} />
+          </div>
+        </section>
+      )}
     </main>
   );
 }
 
-const styles: Record<string, CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f3f4f6",
-    padding: "32px 16px",
-  },
-  container: {
-    maxWidth: 860,
-    margin: "0 auto",
-    display: "grid",
-    gap: 16,
-  },
-  h1: {
-    margin: 0,
-    fontSize: 30,
-  },
-  subtitle: {
-    margin: 0,
-    color: "#4b5563",
-  },
-  button: {
-    justifySelf: "start",
-    padding: "11px 16px",
-    border: "none",
-    borderRadius: 8,
-    background: "#111827",
-    color: "#fff",
-    cursor: "pointer",
-  },
-};
+function formatTime(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = (totalSeconds % 60).toString().padStart(2, "0");
+  return `${mins}:${secs}`;
+}
