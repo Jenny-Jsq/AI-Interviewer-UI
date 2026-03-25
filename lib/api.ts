@@ -1,4 +1,5 @@
 import {
+  AccessCodeValidationResponse,
   ChatMessage,
   InterviewFeedback,
   InterviewSessionInput,
@@ -24,8 +25,12 @@ async function postToLocal<TPayload, TResponse>(endpoint: string, payload: TPayl
   }
 }
 
+export async function validateCode(code: string): Promise<AccessCodeValidationResponse | null> {
+  return postToLocal<{ code: string }, AccessCodeValidationResponse>("/api/validate-code", { code });
+}
+
 export async function startInterviewSession(payload: InterviewSessionInput): Promise<StartInterviewResponse | null> {
-  return postToLocal<InterviewSessionInput, StartInterviewResponse>("/api/interview/start", payload);
+  return postToLocal<InterviewSessionInput, StartInterviewResponse>("/api/start-session", payload);
 }
 
 export async function sendInterviewMessage(payload: {
@@ -34,7 +39,7 @@ export async function sendInterviewMessage(payload: {
   schoolId: string;
   programId: string;
 }): Promise<TurnResponse | null> {
-  return postToLocal<typeof payload, TurnResponse>("/api/interview/turn", payload);
+  return postToLocal<typeof payload, TurnResponse>("/api/chat", payload);
 }
 
 export async function requestInterviewFeedback(payload: {
@@ -43,5 +48,5 @@ export async function requestInterviewFeedback(payload: {
   schoolId: string;
   programId: string;
 }): Promise<InterviewFeedback | null> {
-  return postToLocal<typeof payload, InterviewFeedback>("/api/interview/feedback", payload);
+  return postToLocal<typeof payload, InterviewFeedback>("/api/feedback", payload);
 }
