@@ -117,11 +117,24 @@ function InterviewContent() {
     setIsSending(true);
     await handleStartIfNeeded();
 
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content,
-      timestamp: Date.now(),
+      setSessionId(response.sessionId);
+      setInterviewer(response.interviewer);
+      setTopics(response.topics);
+      setCurrentTopicIndex(response.currentTopicIndex);
+      setMessages([
+        {
+          id: "assistant-1",
+          role: "assistant",
+          content: response.openingQuestion,
+          timestamp: Date.now(),
+        },
+      ]);
+
+      setTimeout(() => {
+        if (!isCancelled) {
+          setStage("chat");
+        }
+      }, 1200);
     };
 
     const nextMessages = [...messages, userMessage];
@@ -142,6 +155,7 @@ function InterviewContent() {
         "谢谢你的分享。接下来请举一个你在高压环境下体现领导力的具体案例。",
       timestamp: Date.now(),
     };
+  }, [canStart, schoolId, programId, resumeFileName, coverLetterText]);
 
     setMessages((prev) => [...prev, assistantMessage]);
     setIsSending(false);
