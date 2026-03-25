@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useMemo } from "react";
+import { useMemo } from "react";
 import { Program, School } from "../types";
 
 interface SchoolSelectorProps {
@@ -26,16 +26,15 @@ export default function SchoolSelector({
   );
 
   return (
-    <section style={styles.card}>
-      <h2 style={styles.title}>1) Select your target school and program</h2>
-      <label style={styles.label}>
-        School
+    <section className="field-grid">
+      <label className="field-group">
+        <span className="field-label">目标学校</span>
         <select
-          style={styles.input}
+          className="field-input"
           value={selectedSchoolId}
           onChange={(event) => onSchoolChange(event.target.value)}
         >
-          <option value="">Choose a school</option>
+          <option value="">请选择学校</option>
           {schools.map((school) => (
             <option key={school.school_id} value={school.school_id}>
               {school.school_name} ({school.country})
@@ -44,15 +43,15 @@ export default function SchoolSelector({
         </select>
       </label>
 
-      <label style={styles.label}>
-        Program
+      <label className="field-group">
+        <span className="field-label">申请项目</span>
         <select
-          style={styles.input}
+          className="field-input"
           value={selectedProgramId}
           onChange={(event) => onProgramChange(event.target.value)}
           disabled={!selectedSchoolId}
         >
-          <option value="">Choose a program</option>
+          <option value="">请选择项目</option>
           {filteredPrograms.map((program) => (
             <option key={program.program_id} value={program.program_id}>
               {program.program_name} · {program.degree_type}
@@ -63,30 +62,3 @@ export default function SchoolSelector({
     </section>
   );
 }
-
-const styles: Record<string, CSSProperties> = {
-  card: {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    padding: 20,
-    display: "grid",
-    gap: 14,
-  },
-  title: {
-    margin: 0,
-    fontSize: 20,
-  },
-  label: {
-    display: "grid",
-    gap: 8,
-    fontWeight: 600,
-  },
-  input: {
-    padding: "10px 12px",
-    border: "1px solid #d1d5db",
-    borderRadius: 8,
-    fontSize: 14,
-    background: "#fff",
-  },
-};
