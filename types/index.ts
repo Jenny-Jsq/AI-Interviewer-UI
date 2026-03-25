@@ -18,6 +18,7 @@ export interface Program {
 }
 
 export interface InterviewSessionInput {
+  accessCode: string;
   schoolId: string;
   programId: string;
   resumeText?: string;
@@ -36,6 +37,7 @@ export interface StartInterviewResponse {
   topics: string[];
   currentTopicIndex: number;
   openingQuestion: string;
+  remainingUses: number;
 }
 
 export interface ChatMessage {
@@ -59,4 +61,10 @@ export interface InterviewFeedback {
     detail: string;
     action: string;
   }>;
+}
+
+export interface AccessCodeValidationResponse {
+  valid: boolean;
+  remainingUses: number;
+  message?: string;
 }
