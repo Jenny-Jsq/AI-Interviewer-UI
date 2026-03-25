@@ -1,10 +1,12 @@
 export async function generateWithGemini(prompt: string, maxOutputTokens = 512): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY || "";
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
   if (!apiKey) {
     return null;
   }
 
-  const geminiEndpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
+  const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const res = await fetch(geminiEndpoint, {
     method: "POST",

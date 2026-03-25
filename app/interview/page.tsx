@@ -16,7 +16,7 @@ const defaultAgendaItems = [
   "反向提问环节",
 ];
 
-type InterviewStage = "loading" | "chat";
+type InterviewStage = "loading" | "chat" | "error";
 
 export default function InterviewPage() {
   return (
@@ -38,6 +38,7 @@ function InterviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const accessCode = searchParams.get("accessCode") ?? "";
   const schoolId = searchParams.get("schoolId") ?? "";
   const programId = searchParams.get("programId") ?? "";
   const resumeFileName = searchParams.get("resumeFileName") ?? "";
@@ -52,8 +53,13 @@ function InterviewContent() {
   const [agendaItems, setAgendaItems] = useState<string[]>(defaultAgendaItems);
   const [completedCount, setCompletedCount] = useState(0);
   const [isStarting, setIsStarting] = useState(false);
+  const [remainingUses, setRemainingUses] = useState(Number(searchParams.get("remainingUses") ?? "0"));
+  const [startupError, setStartupError] = useState("");
 
-  const canStart = useMemo(() => Boolean(schoolId) && Boolean(programId), [schoolId, programId]);
+  const canStart = useMemo(
+    () => Boolean(accessCode) && Boolean(schoolId) && Boolean(programId),
+    [accessCode, schoolId, programId],
+  );
 
   useEffect(() => {
     if (!canStart) return;
@@ -62,7 +68,10 @@ function InterviewContent() {
 
     const initSession = async () => {
       setIsStarting(true);
+      setStartupError("");
+
       const response = await startInterviewSession({
+        accessCode,
         schoolId,
         programId,
         resumeText: resumeFileName ? `Uploaded file: ${resumeFileName}` : undefined,
@@ -71,52 +80,47 @@ function InterviewContent() {
 
       if (cancelled) return;
 
-      if (response?.sessionId) {
-        setSessionId(response.sessionId);
-        if (response.topics.length >= 1) {
-          setAgendaItems(response.topics);
-        }
-        setMessages([
-          {
-            id: "assistant-1",
-            role: "assistant",
-            content: response.openingQuestion,
-            timestamp: Date.now(),
-          },
-        ]);
-      } else {
-        setMessages([
-          {
-            id: "assistant-1",
-            role: "assistant",
-            content:
-              "您好。我是 Sarah。我已经仔细审阅了您的申请背景。首先请做一个简短的自我介绍，并重点谈谈为什么选择在现在申请 MBA？",
-            timestamp: Date.now(),
-          },
-        ]);
+      if (!response?.sessionId) {
+        setStartupError("无法开始面试。请确认 access code 仍有剩余次数，然后返回首页重试。");
+        setStage("error");
+        setIsStarting(false);
+        return;
       }
 
-      setIsStarting(false);
+      setSessionId(response.sessionId);
+      setRemainingUses(response.remainingUses);
+      if (response.topics.length >= 1) {
+        setAgendaItems(response.topics);
+      }
+      setMessages([
+        {
+          id: "assistant-1",
+          role: "assistant",
+          content: response.openingQuestion,
+          timestamp: Date.now(),
+        },
+      ]);
+
+      const timer = window.setInterval(() => {
+        setLoadingCountdown((prev) => {
+          if (prev <= 1) {
+            window.clearInterval(timer);
+            setStage("chat");
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => window.clearInterval(timer);
     };
 
     void initSession();
 
-    const timer = window.setInterval(() => {
-      setLoadingCountdown((prev) => {
-        if (prev <= 1) {
-          window.clearInterval(timer);
-          setStage("chat");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
     };
-  }, [canStart, schoolId, programId, resumeFileName, coverLetterText]);
+  }, [canStart, accessCode, schoolId, programId, resumeFileName, coverLetterText]);
 
   useEffect(() => {
     if (stage !== "chat") return;
@@ -125,6 +129,12 @@ function InterviewContent() {
   }, [stage]);
 
   const handleSendMessage = async (content: string) => {
+    if (!sessionId) {
+      setStartupError("会话不存在，请返回首页重新开始。");
+      setStage("error");
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -148,7 +158,7 @@ function InterviewContent() {
       role: "assistant",
       content:
         turnResponse?.reply ??
-        "谢谢你的分享。接下来请举一个你在高压环境下体现领导力的具体案例。",
+        "网络异常或会话失效，请返回首页重新输入 access code 后开始新的 mock interview。",
       timestamp: Date.now(),
     };
 
@@ -163,9 +173,7 @@ function InterviewContent() {
 
   const handleFinish = () => {
     const payload = encodeURIComponent(JSON.stringify(messages));
-    router.push(
-      `/result?messages=${payload}&sessionId=${sessionId ?? ""}&schoolId=${schoolId}&programId=${programId}`,
-    );
+    router.push(`/result?messages=${payload}&sessionId=${sessionId ?? ""}&schoolId=${schoolId}&programId=${programId}`);
   };
 
   if (!canStart) {
@@ -173,7 +181,19 @@ function InterviewContent() {
       <main className="app-shell">
         <section className="panel">
           <h2>缺少必要参数</h2>
-          <p className="panel-intro">请返回首页重新选择目标学校与项目。</p>
+          <p className="panel-intro">请返回首页重新输入 access code、并选择目标学校与项目。</p>
+          <button className="secondary-btn" onClick={() => router.push("/")}>返回首页</button>
+        </section>
+      </main>
+    );
+  }
+
+  if (stage === "error") {
+    return (
+      <main className="app-shell">
+        <section className="panel">
+          <h2>无法开始面试</h2>
+          <p className="panel-intro">{startupError}</p>
           <button className="secondary-btn" onClick={() => router.push("/")}>返回首页</button>
         </section>
       </main>
@@ -186,7 +206,7 @@ function InterviewContent() {
         <div className="brand-mark">🎙️</div>
         <div>
           <h1>MockMaster AI</h1>
-          <p>{schoolId} · {programId}</p>
+          <p>{schoolId} · {programId} · 剩余次数 {remainingUses}</p>
         </div>
         {stage === "chat" ? <div className="timer-pill">{formatTime(seconds)}</div> : null}
       </header>
